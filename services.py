@@ -29,13 +29,12 @@ PRAZO_RETORNO_DIAS = 30    # retorno gratuito dentro de 30 dias
 MULTA_FALTA = 50.0         # multa por falta sem aviso
 
 def inicializar():
-    #Carrega todos os dados dos arquivos JSON para a memória
     global pacientes, medicos, consultas, prontuarios
     pacientes = database.carregar(PACIENTES_FILE)
     medicos = database.carregar(MEDICOS_FILE)
     consultas = database.carregar(CONSULTAS_FILE)
     prontuarios = database.carregar(PRONTUARIOS_FILE)
-
+    
 def gerar_id(lista):
     """Gera um ID numérico único baseado no maior ID já existente na lista."""
     if len(lista) == 0:

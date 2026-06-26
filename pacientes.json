@@ -1,7 +1,9 @@
 [
   {
+    "id": 1,
     "nome": "werike",
     "idade": 21,
-    "telefone": "77998021608"
+    "telefone": "77998021608",
+    "tipo_atendimento": "particular"
   }
 ]
