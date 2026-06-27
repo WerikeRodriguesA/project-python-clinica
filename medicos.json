@@ -6,5 +6,13 @@
     "documentacao": "000001",
     "telefone": "71998021608",
     "ativo": true
+  },
+  {
+    "id": 2,
+    "nome": "Kauan",
+    "especialidade": "dentista",
+    "documentacao": "00100820589",
+    "telefone": "77 999558822",
+    "ativo": true
   }
 ]

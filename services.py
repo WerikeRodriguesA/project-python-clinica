@@ -1,11 +1,15 @@
 import database
-import datetime
+from datetime import datetime
+import os
+
+# Define a pasta base onde os arquivos de persistência serão salvos
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Arquivos de persistência
-PACIENTES_FILE = "pacientes.json"
-MEDICOS_FILE = "medicos.json"
-CONSULTAS_FILE = "consultas.json"
-PRONTUARIOS_FILE = "prontuarios.json"
+PACIENTES_FILE = os.path.join(BASE_DIR, "pacientes.json")
+MEDICOS_FILE = os.path.join(BASE_DIR, "medicos.json")
+CONSULTAS_FILE = os.path.join(BASE_DIR, "consultas.json")
+PRONTUARIOS_FILE = os.path.join(BASE_DIR, "prontuarios.json")
 
 # Dados em memória — carregados uma vez na inicialização
 pacientes = []
@@ -125,7 +129,7 @@ def buscar_pacientes_por_nome(termo):
 def atualizar_paciente(id_paciente, novo_nome, nova_idade, novo_telefone, novo_tipo):
     """
     Atualiza os dados de um paciente existente.
-    Retorna True se encontrou e atualizou, False se não encontrou.
+    Retorna True e uma mensagem se encontrou e atualizou, False e uma mensagem se não encontrou.
     """
     for paciente in pacientes:
         if paciente["id"] == id_paciente:
@@ -134,8 +138,8 @@ def atualizar_paciente(id_paciente, novo_nome, nova_idade, novo_telefone, novo_t
             paciente["telefone"] = novo_telefone
             paciente["tipo_atendimento"] = novo_tipo
             database.salvar(PACIENTES_FILE, pacientes)
-            return True
-    return False
+            return True, "Paciente atualizado com sucesso."
+    return False, "Paciente não encontrado."
 
 def deletar_paciente(id_paciente):
     """
@@ -189,7 +193,7 @@ def buscar_medicos_por_especialidade(especialidade):
     return encontrados
 
 def atualizar_medico(id_medico, novo_nome, nova_especialidade, nova_documentacao, novo_telefone):
-    """Atualiza dados de um médico. Retorna True se atualizou."""
+    """Atualiza dados de um médico. Retorna True e mensagem se atualizou."""
     for medico in medicos:
         if medico["id"] == id_medico:
             medico["nome"] = novo_nome
@@ -197,30 +201,30 @@ def atualizar_medico(id_medico, novo_nome, nova_especialidade, nova_documentacao
             medico["documentacao"] = nova_documentacao
             medico["telefone"] = novo_telefone
             database.salvar(MEDICOS_FILE, medicos)
-            return True
-    return False
+            return True, "Médico atualizado com sucesso."
+    return False, "Médico não encontrado."
 
 def afastar_medico(id_medico):
     """
     Marca um médico como inativo (afastado).
     Não deleta — preserva histórico de consultas.
-    Retorna True se encontrou e afastou.
+    Retorna True e mensagem se encontrou e afastou.
     """
     for medico in medicos:
         if medico["id"] == id_medico:
             medico["ativo"] = False
             database.salvar(MEDICOS_FILE, medicos)
-            return True
-    return False
+            return True, "Médico afastado com sucesso."
+    return False, "Médico não encontrado."
 
 def reativar_medico(id_medico):
-    """Reativa um médico afastado. Retorna True se encontrou."""
+    """Reativa um médico afastado. Retorna True e mensagem se encontrou."""
     for medico in medicos:
         if medico["id"] == id_medico:
             medico["ativo"] = True
             database.salvar(MEDICOS_FILE, medicos)
-            return True
-    return False
+            return True, "Médico reativado com sucesso."
+    return False, "Médico não encontrado."
 
 def deletar_medico(id_medico):
     """

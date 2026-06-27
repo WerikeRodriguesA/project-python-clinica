@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "paciente_id": 1,
+    "paciente_nome": "werike",
+    "medico_id": 1,
+    "medico_nome": "jesiica elaine",
+    "especialidade": "dentista",
+    "data_hora": "27/06/2026 11:00",
+    "tipo_atendimento": "particular",
+    "primeira_consulta": true,
+    "status": "concluida",
+    "valor_total": 200.0,
+    "data_conclusao": "27/06/2026 10:34"
+  }
+]
