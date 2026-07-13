@@ -1,0 +1,1094 @@
+import services
+from datetime import datetime
+
+# ==================== FUNÇÕES DE VALIDAÇÃO ====================
+
+def validar_idade(texto):
+    """Valida se a idade é um número inteiro não negativo."""
+    try:
+        valor = int(texto)
+        if valor < 0:
+            return None
+        return valor
+    except ValueError:
+        return None
+
+def validar_float(texto):
+    """Valida se o valor é um número decimal válido."""
+    try:
+        valor = float(texto)
+        if valor < 0:
+            return None
+        return valor
+    except ValueError:
+        return None
+
+def validar_data_hora(texto):
+    """Valida se a string está no formato DD/MM/YYYY HH:MM."""
+    try:
+        datetime.strptime(texto, "%d/%m/%Y %H:%M")
+        return True
+    except ValueError:
+        return False
+
+def validar_tipo_atendimento(texto):
+    """Valida se o tipo é 'particular' ou 'convenio'."""
+    return texto.lower() in ["particular", "convenio"]
+
+def validar_sim_nao(texto):
+    """Valida resposta s/n e retorna True/False ou None se inválido."""
+    if texto.lower() in ["s", "n"]:
+        return texto.lower() == "s"
+    return None
+
+# ==================== FUNÇÕES DE EXIBIÇÃO ====================
+
+def exibir_paciente(paciente):
+    print(f"  ID: {paciente['id']}\n  Nome: {paciente['nome']}\n  Idade: {paciente['idade']} anos\n  Telefone: {paciente['telefone']}\n  Atendimento: {paciente['tipo_atendimento']}")
+
+def exibir_medico(medico):
+    status = "ativo" if medico["ativo"] else "afastado"
+    print(f"  ID: {medico['id']}\n  Nome: {medico['nome']}\n  Especialidade: {medico['especialidade']}\n  Documento: {medico['documentacao']}\n  Telefone: {medico['telefone']}\n  Status: {status}")
+
+def exibir_consulta(consulta):
+    primeira = "Sim" if consulta["primeira_consulta"] else "Não"
+    print(f"  ID: {consulta['id']}\n  Paciente: {consulta['paciente_nome']}\n  Médico: {consulta['medico_nome']} ({consulta['especialidade']})\n  Data/Hora: {consulta['data_hora']}\n  Tipo: {consulta['tipo_atendimento']}\n  Primeira consulta: {primeira}\n  Status: {consulta['status']}\n  Valor: R$ {consulta['valor_total']:.2f}")
+
+def exibir_prontuario(prontuario):
+    print(f"  ID: {prontuario['id']}\n  Paciente: {prontuario['paciente_nome']}\n  Médico: {prontuario['medico_nome']}\n  Data conclusão: {prontuario['data_conclusao']}\n  Observações: {prontuario['observacoes']}\n  Procedimentos:")
+    for proc in prontuario["procedimentos"]:
+        print(f"    - {proc['nome']}: R$ {proc['valor']:.2f}")
+    print(f"  Total procedimentos: R$ {prontuario['valor_procedimentos']:.2f}")
+
+# ==================== FUNÇÕES DE PACIENTES ====================
+
+def cadastrar_paciente():
+    print("\n--- CADASTRAR PACIENTE ---")
+
+    nome = input("Nome: ").strip()
+    if not nome:
+        print("Nome não pode ser vazio.")
+        return
+
+    idade = None
+    while idade is None:
+        idade = validar_idade(input("Idade: ").strip())
+        if idade is None:
+            print("Idade inválida. Digite um número inteiro não negativo.")
+
+    telefone = input("Telefone: ").strip()
+    if not telefone:
+        print("Telefone não pode ser vazio.")
+        return
+
+    tipo = None
+    while tipo is None:
+        tipo = input("Tipo de atendimento (particular/convenio): ").strip().lower()
+        if not validar_tipo_atendimento(tipo):
+            print("Tipo inválido. Digite 'particular' ou 'convenio'.")
+            tipo = None
+
+    paciente = services.cadastrar_paciente(nome, idade, telefone, tipo)
+    print(f"\nPaciente cadastrado com sucesso!")
+    exibir_paciente(paciente)
+
+def listar_pacientes():
+    print("\n--- LISTA DE PACIENTES ---")
+
+    pacientes = services.listar_pacientes()
+
+    if len(pacientes) == 0:
+        print("Nenhum paciente cadastrado.")
+        return
+
+    for paciente in pacientes:
+        print("-" * 30)
+        exibir_paciente(paciente)
+    print("-" * 30)
+    print(f"Total: {len(pacientes)} paciente(s).")
+
+def buscar_paciente():
+    print("\n--- BUSCAR PACIENTE ---")
+
+    termo = input("Digite o nome para buscar: ").strip()
+    if not termo:
+        print("Termo de busca vazio.")
+        return
+
+    encontrados = services.buscar_pacientes_por_nome(termo)
+
+    if len(encontrados) == 0:
+        print(f"Nenhum paciente encontrado com '{termo}'.")
+        return
+
+    print(f"\n{len(encontrados)} resultado(s):")
+    for paciente in encontrados:
+        print("-" * 30)
+        exibir_paciente(paciente)
+    print("-" * 30)
+
+def atualizar_paciente():
+    print("\n--- ATUALIZAR PACIENTE ---")
+
+    listar_pacientes()
+
+    try:
+        id_paciente = int(input("Digite o ID do paciente a atualizar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(id_paciente)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    print("\nDados atuais:")
+    exibir_paciente(paciente)
+    print("\nDigite os novos dados (Enter para manter o atual):")
+    novo_nome = input(f"Nome [{paciente['nome']}]: ").strip() or paciente["nome"]
+
+    nova_idade_str = input(f"Idade [{paciente['idade']}]: ").strip()
+    nova_idade = validar_idade(nova_idade_str) if nova_idade_str else paciente["idade"]
+    if nova_idade is None:
+        print("Idade inválida. Atualização cancelada.")
+        return
+
+    novo_telefone = input(f"Telefone [{paciente['telefone']}]: ").strip() or paciente["telefone"]
+    novo_tipo = input(f"Tipo [{paciente['tipo_atendimento']}]: ").strip().lower() or paciente["tipo_atendimento"]
+    if not validar_tipo_atendimento(novo_tipo):
+        print("Tipo inválido. Atualização cancelada.")
+        return
+
+    sucesso, mensagem = services.atualizar_paciente(id_paciente, novo_nome, nova_idade, novo_telefone, novo_tipo)
+    print(mensagem)
+
+def remover_paciente():
+    print("\n--- REMOVER PACIENTE ---")
+
+    listar_pacientes()
+
+    try:
+        id_paciente = int(input("Digite o ID do paciente a remover: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(id_paciente)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    print("\nPaciente encontrado:")
+    exibir_paciente(paciente)
+
+    confirmacao = input("\nTem certeza que deseja remover? (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Remoção cancelada.")
+        return
+
+    services.deletar_paciente(id_paciente)
+    print("Paciente removido com sucesso.")
+
+# ==================== MENU PACIENTES ====================
+
+def menu_pacientes():
+    while True:
+        print("\n=== PACIENTES ===\n1. Cadastrar paciente\n2. Listar pacientes\n3. Buscar paciente por nome\n4. Atualizar paciente\n5. Remover paciente\n0. Voltar")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            cadastrar_paciente()
+        elif opcao == "2":
+            listar_pacientes()
+        elif opcao == "3":
+            buscar_paciente()
+        elif opcao == "4":
+            atualizar_paciente()
+        elif opcao == "5":
+            remover_paciente()
+        elif opcao == "0":
+            break
+        else:
+            print("Opção inválida.")
+
+# ==================== FUNÇÕES DE MÉDICOS ====================
+
+def cadastrar_medico():
+    print("\n--- CADASTRAR MÉDICO ---")
+
+    nome = input("Nome: ").strip()
+    if not nome:
+        print("Nome não pode ser vazio.")
+        return
+
+    print("\nEspecialidades disponíveis:", ", ".join(services.PRECOS.keys()))
+    especialidade = input("Especialidade: ").strip().lower()
+    if not especialidade:
+        print("Especialidade não pode ser vazia.")
+        return
+
+    documentacao = input("Documento (CRM/CPF/RG): ").strip()
+    if not documentacao:
+        print("Documento não pode ser vazio.")
+        return
+
+    telefone = input("Telefone: ").strip()
+    if not telefone:
+        print("Telefone não pode ser vazio.")
+        return
+
+    medico = services.cadastrar_medico(nome, especialidade, documentacao, telefone)
+    print("\nMédico cadastrado com sucesso!")
+    exibir_medico(medico)
+
+def listar_medicos(apenas_ativos=True):
+    if apenas_ativos:
+        print("\n--- MÉDICOS ATIVOS ---")
+    else:
+        print("\n--- TODOS OS MÉDICOS ---")
+
+    medicos = services.listar_medicos(apenas_ativos)
+
+    if len(medicos) == 0:
+        print("Nenhum médico encontrado.")
+        return
+
+    for medico in medicos:
+        print("-" * 30)
+        exibir_medico(medico)
+    print("-" * 30)
+    print(f"Total: {len(medicos)} médico(s).")
+
+def buscar_medico_por_especialidade():
+    print("\n--- BUSCAR POR ESPECIALIDADE ---")
+
+    print("Especialidades disponíveis:", ", ".join(services.PRECOS.keys()))
+    especialidade = input("Especialidade: ").strip().lower()
+    if not especialidade:
+        print("Especialidade não pode ser vazia.")
+        return
+
+    encontrados = services.buscar_medicos_por_especialidade(especialidade)
+
+    if len(encontrados) == 0:
+        print(f"Nenhum médico ativo encontrado para '{especialidade}'.")
+        return
+
+    print(f"\n{len(encontrados)} resultado(s):")
+    for medico in encontrados:
+        print("-" * 30)
+        exibir_medico(medico)
+    print("-" * 30)
+
+def atualizar_medico():
+    print("\n--- ATUALIZAR MÉDICO ---")
+
+    listar_medicos(apenas_ativos=False)
+
+    try:
+        id_medico = int(input("Digite o ID do médico a atualizar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(id_medico)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    print("\nDados atuais:")
+    exibir_medico(medico)
+    print("\nDigite os novos dados (Enter para manter o atual):")
+    novo_nome = input(f"Nome [{medico['nome']}]: ").strip() or medico["nome"]
+
+    print("Especialidades disponíveis:", ", ".join(services.PRECOS.keys()))
+    nova_especialidade = input(f"Especialidade [{medico['especialidade']}]: ").strip().lower() or medico["especialidade"]
+    nova_documentacao = input(f"Documento [{medico['documentacao']}]: ").strip() or medico["documentacao"]
+    novo_telefone = input(f"Telefone [{medico['telefone']}]: ").strip() or medico["telefone"]
+
+    sucesso, mensagem = services.atualizar_medico(id_medico, novo_nome, nova_especialidade, nova_documentacao, novo_telefone)
+    print(mensagem)
+
+def afastar_medico():
+    print("\n--- AFASTAR MÉDICO ---")
+
+    listar_medicos(apenas_ativos=True)
+
+    try:
+        id_medico = int(input("Digite o ID do médico a afastar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(id_medico)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    print("\nMédico encontrado:")
+    exibir_medico(medico)
+
+    confirmacao = input("\nConfirma o afastamento? (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Operação cancelada.")
+        return
+
+    sucesso, mensagem = services.afastar_medico(id_medico)
+    print(mensagem)
+
+def reativar_medico():
+    print("\n--- REATIVAR MÉDICO ---")
+
+    listar_medicos(apenas_ativos=False)
+
+    try:
+        id_medico = int(input("Digite o ID do médico a reativar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(id_medico)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    if medico["ativo"] == True:
+        print("Médico já está ativo.")
+        return
+
+    sucesso, mensagem = services.reativar_medico(id_medico)
+    print(mensagem)
+
+def remover_medico():
+    print("\n--- REMOVER MÉDICO PERMANENTEMENTE ---")
+    print("Atenção: use 'Afastar' para preservar histórico de consultas.")
+
+    listar_medicos(apenas_ativos=False)
+
+    try:
+        id_medico = int(input("Digite o ID do médico a remover: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(id_medico)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    print("\nMédico encontrado:")
+    exibir_medico(medico)
+
+    confirmacao = input("\nTem certeza? Essa ação não pode ser desfeita. (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Remoção cancelada.")
+        return
+
+    services.deletar_medico(id_medico)
+    print("Médico removido permanentemente.")
+
+# ==================== MENU MÉDICOS ====================
+
+def menu_medicos():
+    while True:
+        print("\n=== MÉDICOS ===\n1. Cadastrar médico\n2. Listar médicos ativos\n3. Listar todos os médicos\n4. Buscar por especialidade\n5. Atualizar médico\n6. Afastar médico\n7. Reativar médico\n8. Remover médico permanentemente\n0. Voltar")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            cadastrar_medico()
+        elif opcao == "2":
+            listar_medicos(apenas_ativos=True)
+        elif opcao == "3":
+            listar_medicos(apenas_ativos=False)
+        elif opcao == "4":
+            buscar_medico_por_especialidade()
+        elif opcao == "5":
+            atualizar_medico()
+        elif opcao == "6":
+            afastar_medico()
+        elif opcao == "7":
+            reativar_medico()
+        elif opcao == "8":
+            remover_medico()
+        elif opcao == "0":
+            break
+        else:
+            print("Opção inválida.")
+
+# ==================== FUNÇÕES DE CONSULTAS ====================
+
+def agendar_consulta():
+    print("\n--- AGENDAR CONSULTA ---")
+
+    pacientes = services.listar_pacientes()
+    if len(pacientes) == 0:
+        print("Nenhum paciente cadastrado. Cadastre um paciente primeiro.")
+        return
+
+    print("\nPacientes disponíveis:")
+    for paciente in pacientes:
+        print(f"  [{paciente['id']}] {paciente['nome']} - {paciente['tipo_atendimento']}")
+
+    try:
+        paciente_id = int(input("\nID do paciente: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(paciente_id)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    print("\nEspecialidades disponíveis:", ", ".join(services.PRECOS.keys()))
+    especialidade = input("Especialidade desejada: ").strip().lower()
+    if not especialidade:
+        print("Especialidade não pode ser vazia.")
+        return
+
+    medicos = services.buscar_medicos_por_especialidade(especialidade)
+    if len(medicos) == 0:
+        print(f"Nenhum médico ativo disponível para '{especialidade}'.")
+        return
+
+    print(f"\nMédicos disponíveis em {especialidade}:")
+    for medico in medicos:
+        print(f"  [{medico['id']}] {medico['nome']}")
+
+    try:
+        medico_id = int(input("\nID do médico: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(medico_id)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    data_hora_str = ""
+    while not validar_data_hora(data_hora_str):
+        data_hora_str = input("Data e hora (DD/MM/YYYY HH:MM): ").strip()
+        if not validar_data_hora(data_hora_str):
+            print("Formato inválido. Use DD/MM/YYYY HH:MM.")
+
+    primeira_consulta = None
+    while primeira_consulta is None:
+        primeira_consulta = validar_sim_nao(
+            input("É primeira consulta? (s/n): ").strip()
+        )
+        if primeira_consulta is None:
+            print("Digite 's' para sim ou 'n' para não.")
+
+    valor_estimado = services.calcular_valor(
+        especialidade,
+        paciente["tipo_atendimento"],
+        primeira_consulta
+    )
+    print(f"\nValor estimado da consulta: R$ {valor_estimado:.2f}")
+    confirmacao = input("Confirmar agendamento? (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Agendamento cancelado.")
+        return
+
+    consulta, mensagem = services.agendar_consulta(
+        paciente_id, medico_id, data_hora_str, primeira_consulta
+    )
+    print(mensagem)
+    if consulta is not None:
+        exibir_consulta(consulta)
+
+def listar_consultas():
+    print("\n--- LISTA DE CONSULTAS ---")
+
+    consultas = services.listar_consultas()
+
+    if len(consultas) == 0:
+        print("Nenhuma consulta registrada.")
+        return
+
+    for consulta in consultas:
+        print("-" * 30)
+        exibir_consulta(consulta)
+    print("-" * 30)
+    print(f"Total: {len(consultas)} consulta(s).")
+
+def buscar_consultas_paciente():
+    print("\n--- CONSULTAS POR PACIENTE ---")
+
+    pacientes = services.listar_pacientes()
+    if len(pacientes) == 0:
+        print("Nenhum paciente cadastrado.")
+        return
+
+    print("\nPacientes:")
+    for paciente in pacientes:
+        print(f"  [{paciente['id']}] {paciente['nome']}")
+
+    try:
+        paciente_id = int(input("\nID do paciente: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(paciente_id)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    consultas = services.buscar_consultas_por_paciente(paciente_id)
+
+    if len(consultas) == 0:
+        print(f"Nenhuma consulta encontrada para {paciente['nome']}.")
+        return
+
+    print(f"\nConsultas de {paciente['nome']}:")
+    for consulta in consultas:
+        print("-" * 30)
+        exibir_consulta(consulta)
+    print("-" * 30)
+
+def buscar_consultas_medico():
+    print("\n--- CONSULTAS POR MÉDICO ---")
+
+    medicos = services.listar_medicos(apenas_ativos=False)
+    if len(medicos) == 0:
+        print("Nenhum médico cadastrado.")
+        return
+
+    print("\nMédicos:")
+    for medico in medicos:
+        print(f"  [{medico['id']}] {medico['nome']} - {medico['especialidade']}")
+
+    try:
+        medico_id = int(input("\nID do médico: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(medico_id)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    consultas = services.buscar_consultas_por_medico(medico_id)
+
+    if len(consultas) == 0:
+        print(f"Nenhuma consulta encontrada para Dr(a). {medico['nome']}.")
+        return
+
+    print(f"\nConsultas de Dr(a). {medico['nome']}:")
+    for consulta in consultas:
+        print("-" * 30)
+        exibir_consulta(consulta)
+    print("-" * 30)
+
+def concluir_consulta():
+    print("\n--- CONCLUIR CONSULTA ---")
+
+    consultas = services.listar_consultas()
+    agendadas = [c for c in consultas if c["status"] == "agendada"]
+
+    if len(agendadas) == 0:
+        print("Nenhuma consulta agendada no momento.")
+        return
+
+    print("\nConsultas agendadas:")
+    for consulta in agendadas:
+        print(f"  [{consulta['id']}] {consulta['paciente_nome']} "
+              f"- Dr(a). {consulta['medico_nome']} "
+              f"- {consulta['data_hora']}")
+
+    try:
+        consulta_id = int(input("\nID da consulta a concluir: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    sucesso, mensagem = services.concluir_consulta(consulta_id)
+    print(mensagem)
+
+def registrar_falta():
+    print("\n--- REGISTRAR FALTA ---")
+
+    consultas = services.listar_consultas()
+    agendadas = [c for c in consultas if c["status"] == "agendada"]
+
+    if len(agendadas) == 0:
+        print("Nenhuma consulta agendada no momento.")
+        return
+
+    print("\nConsultas agendadas:")
+    for consulta in agendadas:
+        print(f"  [{consulta['id']}] {consulta['paciente_nome']} "
+              f"- Dr(a). {consulta['medico_nome']} "
+              f"- {consulta['data_hora']}")
+
+    try:
+        consulta_id = int(input("\nID da consulta: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    sucesso, mensagem = services.registrar_falta(consulta_id)
+    print(mensagem)
+
+def cancelar_consulta():
+    print("\n--- CANCELAR CONSULTA ---")
+
+    consultas = services.listar_consultas()
+    agendadas = [c for c in consultas if c["status"] == "agendada"]
+
+    if len(agendadas) == 0:
+        print("Nenhuma consulta agendada no momento.")
+        return
+
+    print("\nConsultas agendadas:")
+    for consulta in agendadas:
+        print(f"  [{consulta['id']}] {consulta['paciente_nome']} "
+              f"- Dr(a). {consulta['medico_nome']} "
+              f"- {consulta['data_hora']}")
+
+    try:
+        consulta_id = int(input("\nID da consulta: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    confirmacao = input("Confirma o cancelamento? (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Operação cancelada.")
+        return
+
+    sucesso, mensagem = services.cancelar_consulta(consulta_id)
+    print(mensagem)
+
+def remover_consulta():
+    print("\n--- REMOVER CONSULTA ---")
+
+    listar_consultas()
+
+    try:
+        consulta_id = int(input("ID da consulta a remover: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    confirmacao = input("Tem certeza? Essa ação não pode ser desfeita. (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Remoção cancelada.")
+        return
+
+    sucesso = services.deletar_consulta(consulta_id)
+    if sucesso:
+        print("Consulta removida com sucesso.")
+    else:
+        print("Consulta não encontrada.")
+
+# ==================== MENU CONSULTAS ====================
+
+def menu_consultas():
+    while True:
+        print("\n=== CONSULTAS ===\n1. Agendar consulta\n2. Listar todas as consultas\n3. Buscar consultas por paciente\n4. Buscar consultas por médico\n5. Concluir consulta\n6. Registrar falta\n7. Cancelar consulta\n8. Remover consulta\n0. Voltar")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            agendar_consulta()
+        elif opcao == "2":
+            listar_consultas()
+        elif opcao == "3":
+            buscar_consultas_paciente()
+        elif opcao == "4":
+            buscar_consultas_medico()
+        elif opcao == "5":
+            concluir_consulta()
+        elif opcao == "6":
+            registrar_falta()
+        elif opcao == "7":
+            cancelar_consulta()
+        elif opcao == "8":
+            remover_consulta()
+        elif opcao == "0":
+            break
+        else:
+            print("Opção inválida.")
+
+# ==================== FUNÇÕES DE PRONTUÁRIOS ====================
+
+def criar_prontuario():
+    print("\n--- CRIAR PRONTUÁRIO ---")
+
+    consultas = services.listar_consultas()
+    concluidas = [c for c in consultas if c["status"] == "concluida"]
+
+    if len(concluidas) == 0:
+        print("Nenhuma consulta concluída disponível para criar prontuário.")
+        return
+
+    print("\nConsultas concluídas:")
+    for consulta in concluidas:
+        print(f"  [{consulta['id']}] {consulta['paciente_nome']} "
+              f"- Dr(a). {consulta['medico_nome']} "
+              f"- {consulta['data_hora']}")
+
+    try:
+        consulta_id = int(input("\nID da consulta: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    procedimentos = []
+    print("\nInforme os procedimentos realizados.")
+    print("Digite 'fim' no nome do procedimento para encerrar.")
+
+    while True:
+        nome_proc = input("\nNome do procedimento: ").strip()
+        if nome_proc.lower() == "fim":
+            break
+        if not nome_proc:
+            print("Nome não pode ser vazio.")
+            continue
+
+        valor_proc = None
+        while valor_proc is None:
+            valor_proc = validar_float(input(f"Valor de '{nome_proc}': R$ ").strip())
+            if valor_proc is None:
+                print("Valor inválido. Digite um número positivo.")
+
+        procedimentos.append({"nome": nome_proc, "valor": valor_proc})
+        print(f"Procedimento '{nome_proc}' adicionado.")
+
+    observacoes = input("\nObservações gerais: ").strip()
+
+    prontuario, mensagem = services.criar_prontuario(
+        consulta_id, procedimentos, observacoes
+    )
+    print(mensagem)
+    if prontuario is not None:
+        exibir_prontuario(prontuario)
+
+def listar_prontuarios():
+    print("\n--- LISTA DE PRONTUÁRIOS ---")
+
+    prontuarios = services.listar_prontuarios()
+
+    if len(prontuarios) == 0:
+        print("Nenhum prontuário registrado.")
+        return
+
+    for prontuario in prontuarios:
+        print("-" * 30)
+        exibir_prontuario(prontuario)
+    print("-" * 30)
+    print(f"Total: {len(prontuarios)} prontuário(s).")
+
+def buscar_prontuarios_paciente():
+    print("\n--- PRONTUÁRIOS POR PACIENTE ---")
+
+    pacientes = services.listar_pacientes()
+    if len(pacientes) == 0:
+        print("Nenhum paciente cadastrado.")
+        return
+
+    print("\nPacientes:")
+    for paciente in pacientes:
+        print(f"  [{paciente['id']}] {paciente['nome']}")
+
+    try:
+        paciente_id = int(input("\nID do paciente: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(paciente_id)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    prontuarios = services.buscar_prontuario_por_paciente(paciente_id)
+
+    if len(prontuarios) == 0:
+        print(f"Nenhum prontuário encontrado para {paciente['nome']}.")
+        return
+
+    print(f"\nProntuários de {paciente['nome']}:")
+    for prontuario in prontuarios:
+        print("-" * 30)
+        exibir_prontuario(prontuario)
+    print("-" * 30)
+
+def atualizar_prontuario():
+    print("\n--- ATUALIZAR PRONTUÁRIO ---")
+
+    prontuarios = services.listar_prontuarios()
+    if len(prontuarios) == 0:
+        print("Nenhum prontuário registrado.")
+        return
+
+    print("\nProntuários:")
+    for prontuario in prontuarios:
+        print(f"  [{prontuario['id']}] {prontuario['paciente_nome']} "
+              f"- Dr(a). {prontuario['medico_nome']} "
+              f"- {prontuario['data_conclusao']}")
+
+    try:
+        prontuario_id = int(input("\nID do prontuário a atualizar: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    prontuario = services.buscar_prontuario_por_id(prontuario_id)
+    if prontuario is None:
+        print("Prontuário não encontrado.")
+        return
+
+    print("\nDados atuais:")
+    exibir_prontuario(prontuario)
+
+    print("\nInforme os novos procedimentos (substitui os anteriores).")
+    print("Digite 'fim' no nome do procedimento para encerrar.")
+
+    novos_procedimentos = []
+    while True:
+        nome_proc = input("\nNome do procedimento: ").strip()
+        if nome_proc.lower() == "fim":
+            break
+        if not nome_proc:
+            print("Nome não pode ser vazio.")
+            continue
+
+        valor_proc = None
+        while valor_proc is None:
+            valor_proc = validar_float(input(f"Valor de '{nome_proc}': R$ ").strip())
+            if valor_proc is None:
+                print("Valor inválido. Digite um número positivo.")
+
+        novos_procedimentos.append({"nome": nome_proc, "valor": valor_proc})
+        print(f"Procedimento '{nome_proc}' adicionado.")
+
+    novas_observacoes = input("\nNovas observações: ").strip()
+
+    sucesso, mensagem = services.atualizar_prontuario(
+        prontuario_id, novos_procedimentos, novas_observacoes
+    )
+    print(mensagem)
+
+def remover_prontuario():
+    print("\n--- REMOVER PRONTUÁRIO ---")
+
+    prontuarios = services.listar_prontuarios()
+    if len(prontuarios) == 0:
+        print("Nenhum prontuário registrado.")
+        return
+
+    print("\nProntuários:")
+    for prontuario in prontuarios:
+        print(f"  [{prontuario['id']}] {prontuario['paciente_nome']} "
+              f"- Dr(a). {prontuario['medico_nome']} "
+              f"- {prontuario['data_conclusao']}")
+
+    try:
+        prontuario_id = int(input("\nID do prontuário a remover: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    prontuario = services.buscar_prontuario_por_id(prontuario_id)
+    if prontuario is None:
+        print("Prontuário não encontrado.")
+        return
+
+    print("\nProntuário encontrado:")
+    exibir_prontuario(prontuario)
+
+    confirmacao = input("\nTem certeza? Essa ação não pode ser desfeita. (s/n): ").strip().lower()
+    if confirmacao != "s":
+        print("Remoção cancelada.")
+        return
+
+    services.deletar_prontuario(prontuario_id)
+    print("Prontuário removido com sucesso.")
+
+# ==================== MENU PRONTUÁRIOS ====================
+
+def menu_prontuarios():
+    while True:
+        print("\n=== PRONTUÁRIOS ===\n1. Criar prontuário\n2. Listar prontuários\n3. Buscar prontuários por paciente\n4. Atualizar prontuário\n5. Remover prontuário\n0. Voltar")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            criar_prontuario()
+        elif opcao == "2":
+            listar_prontuarios()
+        elif opcao == "3":
+            buscar_prontuarios_paciente()
+        elif opcao == "4":
+            atualizar_prontuario()
+        elif opcao == "5":
+            remover_prontuario()
+        elif opcao == "0":
+            break
+        else:
+            print("Opção inválida.")
+
+# ==================== FUNÇÕES DE RELATÓRIOS ====================
+
+def relatorio_por_periodo():
+    print("\n--- RELATÓRIO: CONSULTAS POR PERÍODO ---")
+
+    data_inicio = ""
+    while not validar_data_hora(data_inicio):
+        data_inicio = input("Data início (DD/MM/YYYY HH:MM): ").strip()
+        if not validar_data_hora(data_inicio):
+            print("Formato inválido. Use DD/MM/YYYY HH:MM.")
+
+    data_fim = ""
+    while not validar_data_hora(data_fim):
+        data_fim = input("Data fim (DD/MM/YYYY HH:MM): ").strip()
+        if not validar_data_hora(data_fim):
+            print("Formato inválido. Use DD/MM/YYYY HH:MM.")
+
+    consultas, total = services.relatorio_consultas_por_periodo(data_inicio, data_fim)
+
+    if len(consultas) == 0:
+        print("Nenhuma consulta encontrada nesse período.")
+        return
+
+    print(f"\nConsultas de {data_inicio} até {data_fim}:")
+    print("=" * 40)
+
+    for consulta in consultas:
+        print("-" * 30)
+        exibir_consulta(consulta)
+
+    print("=" * 40)
+    print(f"Total de consultas no período: {len(consultas)}")
+    print(f"Total arrecadado (concluídas): R$ {total:.2f}")
+
+def relatorio_por_medico():
+    print("\n--- RELATÓRIO: CONSULTAS POR MÉDICO ---")
+
+    medicos = services.listar_medicos(apenas_ativos=False)
+    if len(medicos) == 0:
+        print("Nenhum médico cadastrado.")
+        return
+
+    print("\nMédicos:")
+    for medico in medicos:
+        print(f"  [{medico['id']}] {medico['nome']} - {medico['especialidade']}")
+
+    try:
+        medico_id = int(input("\nID do médico: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    medico = services.buscar_medico_por_id(medico_id)
+    if medico is None:
+        print("Médico não encontrado.")
+        return
+
+    consultas, resumo = services.relatorio_consultas_por_medico(medico_id)
+
+    if len(consultas) == 0:
+        print(f"Nenhuma consulta encontrada para Dr(a). {medico['nome']}.")
+        return
+
+    print(f"\nRelatório de Dr(a). {medico['nome']} ({medico['especialidade']}):")
+    print("=" * 40)
+
+    for consulta in consultas:
+        print("-" * 30)
+        exibir_consulta(consulta)
+
+    print("=" * 40)
+    print(f"Total de consultas: {resumo['total_consultas']}")
+    print(f"  Agendadas:  {resumo['agendadas']}")
+    print(f"  Concluídas: {resumo['concluidas']}")
+    print(f"  Faltas:     {resumo['faltas']}")
+    print(f"  Canceladas: {resumo['canceladas']}")
+
+def relatorio_financeiro_paciente():
+    print("\n--- RELATÓRIO: FINANCEIRO POR PACIENTE ---")
+
+    pacientes = services.listar_pacientes()
+    if len(pacientes) == 0:
+        print("Nenhum paciente cadastrado.")
+        return
+
+    print("\nPacientes:")
+    for paciente in pacientes:
+        print(f"  [{paciente['id']}] {paciente['nome']}")
+
+    try:
+        paciente_id = int(input("\nID do paciente: ").strip())
+    except ValueError:
+        print("ID inválido.")
+        return
+
+    paciente = services.buscar_paciente_por_id(paciente_id)
+    if paciente is None:
+        print("Paciente não encontrado.")
+        return
+
+    resultado = services.relatorio_financeiro_paciente(paciente_id)
+
+    if len(resultado["consultas"]) == 0:
+        print(f"Nenhuma consulta encontrada para {paciente['nome']}.")
+        return
+
+    print(f"\nRelatório financeiro de {paciente['nome']}:")
+    print("=" * 40)
+
+    for consulta in resultado["consultas"]:
+        print("-" * 30)
+        exibir_consulta(consulta)
+
+    print("=" * 40)
+    print(f"Total em consultas:  R$ {resultado['total_consultas']:.2f}")
+    print(f"Total em multas:     R$ {resultado['total_multas']:.2f}")
+    print(f"Total geral:         R$ {resultado['total_geral']:.2f}")
+
+# ==================== MENU RELATÓRIOS ====================
+
+def menu_relatorios():
+    while True:
+        print("\n=== RELATÓRIOS ===\n1. Consultas por período\n2. Consultas por médico\n3. Financeiro por paciente\n0. Voltar")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            relatorio_por_periodo()
+        elif opcao == "2":
+            relatorio_por_medico()
+        elif opcao == "3":
+            relatorio_financeiro_paciente()
+        elif opcao == "0":
+            break
+        else:
+            print("Opção inválida.")
+
+# ==================== MENU PRINCIPAL ====================
+
+def menu_principal():
+    while True:
+        print("\n========================================\n       SISTEMA CLÍNICA VIDA+\n========================================\n1. Pacientes\n2. Médicos\n3. Consultas\n4. Prontuários\n5. Relatórios\n0. Sair\n========================================")
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "1":
+            menu_pacientes()
+        elif opcao == "2":
+            menu_medicos()
+        elif opcao == "3":
+            menu_consultas()
+        elif opcao == "4":
+            menu_prontuarios()
+        elif opcao == "5":
+            menu_relatorios()
+        elif opcao == "0":
+            print("Encerrando sistema. Até logo!")
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+# ==================== PONTO DE ENTRADA ====================
+
+if __name__ == "__main__":
+    print("Inicializando sistema...")
+    services.inicializar()
+    print("Dados carregados com sucesso.")
+    menu_principal()
