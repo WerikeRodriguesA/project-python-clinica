@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "nome": "Jessica Elaine de Jesus",
+    "especialidade": "dentista",
+    "documentacao": "000001",
+    "telefone": "77999025545",
+    "ativo": true
+  },
+  {
+    "id": 2,
+    "nome": "Kauan Rodrigues",
+    "especialidade": "cardiologista",
+    "documentacao": "00002",
+    "telefone": "8998144555",
+    "ativo": true
+  },
+  {
+    "id": 3,
+    "nome": "Alicia Rodrigues Marques",
+    "especialidade": "clinico geral",
+    "documentacao": "22558899",
+    "telefone": "89981475256",
+    "ativo": true
+  }
+]

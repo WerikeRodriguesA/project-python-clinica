@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "consulta_id": 1,
+    "paciente_id": 1,
+    "paciente_nome": "Werike Rodrigues Alves",
+    "medico_nome": "Jessica Elaine de Jesus",
+    "data_conclusao": "15/07/2026 18:28",
+    "procedimentos": [
+      {
+        "nome": "Extração",
+        "valor": 150.0
+      },
+      {
+        "nome": "Limpeza",
+        "valor": 80.0
+      }
+    ],
+    "valor_procedimentos": 230.0,
+    "observacoes": ""
+  }
+]

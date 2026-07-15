@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "paciente_id": 1,
+    "paciente_nome": "Werike Rodrigues Alves",
+    "medico_id": 1,
+    "medico_nome": "Jessica Elaine de Jesus",
+    "especialidade": "dentista",
+    "data_hora": "14/07/2026 10:00",
+    "tipo_atendimento": "particular",
+    "primeira_consulta": true,
+    "status": "concluida",
+    "valor_total": 430.0,
+    "data_conclusao": "15/07/2026 18:28"
+  },
+  {
+    "id": 2,
+    "paciente_id": 3,
+    "paciente_nome": "João Ricardo",
+    "medico_id": 2,
+    "medico_nome": "Kauan Rodrigues",
+    "especialidade": "cardiologista",
+    "data_hora": "15/07/2026 15:00",
+    "tipo_atendimento": "convenio",
+    "primeira_consulta": true,
+    "status": "cancelada",
+    "valor_total": 210.0
+  }
+]

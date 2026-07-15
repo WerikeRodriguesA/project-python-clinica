@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nome": "Werike Rodrigues Alves",
+    "idade": 21,
+    "telefone": "77 99902608",
+    "tipo_atendimento": "particular"
+  },
+  {
+    "id": 2,
+    "nome": "Maria Luiza Alves Vieira",
+    "idade": 19,
+    "telefone": "61 9 99888825",
+    "tipo_atendimento": "convenio"
+  },
+  {
+    "id": 3,
+    "nome": "João Ricardo",
+    "idade": 59,
+    "telefone": "89 9815552514",
+    "tipo_atendimento": "convenio"
+  },
+  {
+    "id": 4,
+    "nome": "Celia",
+    "idade": 74,
+    "telefone": "89 9812545 6485",
+    "tipo_atendimento": "particular"
+  }
+]
